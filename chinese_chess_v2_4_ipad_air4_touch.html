@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>中國象棋 v2.4｜iPad 觸控優化版</title>
+<style>
+  :root{
+    --bg:#f3eee5;--panel:#fffaf2;--ink:#2b2118;--muted:#776a5f;
+    --red:#b9342c;--black:#262626;--accent:#76502f;--legal:#247c55;
+    --capture:#b23b3b;--shadow:0 18px 46px rgba(56,38,20,.14);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+  body{margin:0;min-height:100vh;min-height:100svh;overscroll-behavior-y:contain;font-family:system-ui,-apple-system,"PingFang TC","Microsoft JhengHei",sans-serif;color:var(--ink);background:radial-gradient(circle at 12% 0%,rgba(255,255,255,.85),transparent 32%),linear-gradient(135deg,#f6f0e7,#ece1d2)}
+  button,input{font:inherit} button{touch-action:manipulation;-webkit-tap-highlight-color:transparent;min-height:46px}
+  .app{max-width:1180px;margin:0 auto;padding:clamp(10px,2vw,22px);padding-left:max(clamp(10px,2vw,22px),env(safe-area-inset-left));padding-right:max(clamp(10px,2vw,22px),env(safe-area-inset-right));padding-bottom:max(clamp(10px,2vw,22px),env(safe-area-inset-bottom))}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:18px}
+  h1{margin:0;font-size:clamp(28px,4vw,43px);letter-spacing:.06em}.subtitle{margin:5px 0 0;color:var(--muted);font-size:14px}
+  .status-card{min-width:225px;padding:12px 16px;border-radius:17px;text-align:right;border:1px solid rgba(106,69,37,.14);background:rgba(255,250,242,.9);box-shadow:var(--shadow)}
+  .status-main{font-size:18px;font-weight:900}.status-sub{font-size:13px;color:var(--muted);margin-top:2px}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:22px;align-items:start}
+  .board-shell,.side-panel{background:rgba(255,250,242,.92);border:1px solid rgba(106,69,37,.14);border-radius:23px;box-shadow:var(--shadow)}
+  .board-shell{padding:17px}.board-wrap{position:relative;width:min(100%,720px);margin:0 auto;aspect-ratio:9/10;border-radius:18px;overflow:hidden;border:2px solid rgba(74,43,20,.52);background:#d9aa65}
+  canvas{display:block;width:100%;height:100%;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+  .thinking-overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(255,250,242,.42);backdrop-filter:blur(1px);pointer-events:none}
+  .thinking-overlay.show{display:flex}.thinking-pill{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:999px;background:rgba(43,33,24,.91);color:#fff;font-weight:800;font-size:14px}
+  .winner-overlay{position:absolute;inset:0;z-index:8;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(35,27,21,.58);backdrop-filter:blur(2px)}
+  .winner-overlay.show{display:flex}
+  .winner-card{width:min(340px,88%);padding:24px 20px;border-radius:22px;text-align:center;background:rgba(255,250,242,.97);border:1px solid rgba(106,69,37,.18);box-shadow:0 18px 50px rgba(35,22,12,.30)}
+  .winner-icon{font-size:42px;line-height:1;margin-bottom:8px}
+  .winner-title{font-size:30px;font-weight:950;letter-spacing:.04em}
+  .winner-title.red{color:var(--red)}.winner-title.black{color:var(--black)}.winner-title.draw{color:#6b5948}
+  .winner-reason{margin:7px 0 17px;color:var(--muted);font-size:14px;line-height:1.5}
+  .winner-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}.winner-actions button{padding:11px 8px}
+
+  .spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;justify-content:center;margin-top:13px;color:var(--muted);font-size:13px}.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}.dot.legal{background:var(--legal)}.dot.capture{background:var(--capture)}
+  .side-panel{padding:17px}.panel-title{font-size:18px;font-weight:900;margin-bottom:11px}
+  .mode-box,.turn-box,.message{border-radius:15px;border:1px solid rgba(106,69,37,.13)}
+  .mode-box{background:#fffdf8;padding:12px 13px;margin-bottom:10px}.mode-row{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:3px 0}.mode-label{color:var(--muted)}.mode-value{font-weight:800;text-align:right}
+  .turn-box{padding:13px;background:#fffdf8;margin-bottom:10px}.turn-label{font-size:12px;color:var(--muted);letter-spacing:.08em}.turn-value{font-size:26px;font-weight:950;margin-top:2px}.turn-value.red{color:var(--red)}.turn-value.black{color:var(--black)}
+  .message{min-height:74px;padding:12px 13px;background:#f5eee3;line-height:1.48;font-size:14px}.message strong{display:block;margin-bottom:3px}
+  .buttons{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:13px 0 15px}button{border:0;border-radius:13px;padding:11px 12px;min-height:48px;font-weight:850;cursor:pointer;background:#302a25;color:#fff;transition:.14s ease}button.secondary{background:#ddd0bf;color:#382f28}button:hover:not(:disabled){transform:translateY(-1px)}button:disabled{opacity:.42;cursor:not-allowed}
+  .history{margin-top:14px;border-top:1px solid rgba(106,69,37,.13);padding-top:13px}.history-list{max-height:245px;overflow:auto;font-size:13px;line-height:1.6}.history-row{padding:6px 8px;border-radius:8px}.history-row:nth-child(odd){background:rgba(118,80,47,.06)}.empty{color:#999}.tiny-note{font-size:12px;color:var(--muted);line-height:1.55;margin-top:9px}
+  .setup{position:fixed;inset:0;z-index:30;display:flex;align-items:flex-start;justify-content:center;padding:42px 18px;background:rgba(38,31,25,.58);overflow:auto}.setup.hidden{display:none}.setup-card{width:min(560px,100%);background:#fffaf2;border-radius:24px;padding:24px;border:1px solid rgba(106,69,37,.16);box-shadow:0 26px 80px rgba(30,20,12,.28)}.setup h2{margin:0 0 6px;font-size:28px}.setup-desc{margin:0 0 20px;color:var(--muted);font-size:14px}.section-label{font-size:13px;font-weight:850;color:#6d5c4d;margin:18px 0 9px}
+  .choice-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}.choice{position:relative}.choice input{position:absolute;opacity:0;pointer-events:none}.choice label{display:block;padding:16px 15px;border:2px solid #e2d8ca;border-radius:16px;cursor:pointer;background:#fffdf9;min-height:76px}.choice strong{display:block;font-size:16px}.choice span{display:block;margin-top:3px;color:var(--muted);font-size:12px;line-height:1.35}.choice input:checked+label{border-color:#5e4938;background:#f3ece2;box-shadow:inset 0 0 0 1px #5e4938}.difficulty-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.difficulty-grid .choice label{min-height:92px}.setup-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:22px}.setup-actions button{min-width:135px}#computerOptions.hidden{display:none}
+  /* Touch devices: targets are deliberately larger than mouse-first UI. */
+  @media (pointer:coarse){
+    button{min-height:52px;font-size:16px}
+    .choice label{min-height:88px;padding:18px 16px}
+    .difficulty-grid .choice label{min-height:100px}
+    .mode-row{font-size:14px;padding:5px 0}
+    .message{font-size:15px;line-height:1.55}
+    .legend{font-size:14px;gap:10px 18px}
+    .dot{width:12px;height:12px}
+    .winner-actions button{min-height:52px}
+  }
+  /* iPad Air 4 landscape / similar 10–11 inch tablets. Keep the board tall enough to tap,
+     but short enough that browser toolbars do not push the controls too far below the fold. */
+  @media (min-width:901px) and (max-height:900px){
+    .app{padding-top:10px;padding-bottom:10px}
+    header{margin-bottom:10px;gap:12px}
+    h1{font-size:31px}.subtitle{font-size:13px;margin-top:2px}
+    .status-card{min-width:210px;padding:9px 13px}
+    .layout{grid-template-columns:minmax(0,1fr) 300px;gap:14px}
+    .board-shell{padding:8px}
+    .board-wrap{width:min(100%,585px)}
+    .legend{margin-top:8px}
+    .side-panel{padding:12px;border-radius:19px}
+    .panel-title{font-size:17px;margin-bottom:8px}
+    .mode-box{padding:9px 11px;margin-bottom:8px}
+    .turn-box{padding:10px 11px;margin-bottom:8px}
+    .turn-value{font-size:23px}
+    .message{min-height:62px;padding:9px 11px}
+    .buttons{margin:9px 0 9px}
+    .tiny-note{margin-top:6px}
+    .history{margin-top:9px;padding-top:9px}
+    .history-list{max-height:135px}
+    .setup{padding:18px}
+    .setup-card{padding:19px}
+    .section-label{margin:13px 0 7px}
+  }
+  /* iPad portrait: make the board the main target, then place information underneath. */
+  @media(max-width:900px){
+    .layout{grid-template-columns:1fr;gap:15px}
+    .board-wrap{width:min(100%,720px)}
+    .side-panel{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+    .side-panel>.panel-title,.history{grid-column:1/-1}.history{margin-top:0}
+  }
+  @media(min-width:700px) and (max-width:900px){
+    .app{padding-top:14px}
+    header{margin-bottom:13px}
+    .board-shell{padding:11px}
+    .history-list{max-height:180px}
+    .setup-card{width:min(650px,100%)}
+  }
+  @media(max-width:620px){.app{padding:11px}header{flex-direction:column;align-items:stretch}.status-card{text-align:left;min-width:0}.board-shell{padding:7px}.side-panel{display:block}.choice-grid,.difficulty-grid{grid-template-columns:1fr}.setup{padding:18px 12px}.setup-card{padding:19px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header><div><h1>中國象棋</h1><p class="subtitle">v2.4 · iPad 觸控優化 · 玩家 / 電腦對戰</p></div><div class="status-card"><div class="status-main" id="topStatus">準備開始</div><div class="status-sub" id="topSub">選擇遊戲模式</div></div></header>
+  <div class="layout">
+    <section class="board-shell"><div class="board-wrap"><canvas id="board" aria-label="中國象棋棋盤"></canvas><div id="thinkingOverlay" class="thinking-overlay" aria-hidden="true"><div class="thinking-pill"><span class="spinner"></span>電腦正在思考…</div></div><div id="winnerOverlay" class="winner-overlay" aria-live="assertive"><div class="winner-card"><div id="winnerIcon" class="winner-icon">🏆</div><div id="winnerTitle" class="winner-title">紅方勝出！</div><div id="winnerReason" class="winner-reason">對局結束</div><div class="winner-actions"><button id="rematchBtn" type="button" class="secondary">再來一局</button><button id="winnerSetupBtn" type="button">返回設定</button></div></div></div></div><div class="legend"><span><span class="dot legal"></span>合法移動</span><span><span class="dot capture"></span>可吃棋</span><span>點同一棋子可取消</span><span>iPad：整個交叉點附近都可點擊</span></div></section>
+    <aside class="side-panel">
+      <div class="panel-title">對局資訊</div>
+      <div class="mode-box"><div class="mode-row"><span class="mode-label">模式</span><span class="mode-value" id="modeText">—</span></div><div class="mode-row"><span class="mode-label">你執</span><span class="mode-value" id="sideText">—</span></div><div class="mode-row"><span class="mode-label">難度</span><span class="mode-value" id="difficultyText">—</span></div></div>
+      <div class="turn-box"><div class="turn-label">CURRENT TURN</div><div id="turnValue" class="turn-value red">紅方</div></div>
+      <div class="message" id="message" aria-live="polite"><strong>準備開始</strong>請選擇遊戲模式。</div>
+      <div class="buttons"><button id="undoBtn" class="secondary">↶ 悔棋</button><button id="newGameBtn">新對局</button></div>
+      <div class="tiny-note">玩家 VS 電腦模式下，悔棋會退回至你上一個回合前。</div>
+      <div class="history"><div class="panel-title">簡易步譜</div><div id="historyList" class="history-list"><div class="empty">尚未行棋</div></div></div>
+    </aside>
+  </div>
+</div>
+
+<div class="setup" id="setupModal">
+  <form class="setup-card" id="setupForm">
+    <h2>開始新對局</h2><p class="setup-desc">先選擇對戰模式。電腦會自動完成自己的回合。</p>
+    <div class="section-label">遊戲模式</div>
+    <div class="choice-grid">
+      <div class="choice"><input type="radio" id="modePvp" name="mode" value="pvp" checked><label for="modePvp"><strong>👥 玩家 VS 玩家</strong><span>同一裝置輪流行棋</span></label></div>
+      <div class="choice"><input type="radio" id="modePvc" name="mode" value="pvc"><label for="modePvc"><strong>🤖 玩家 VS 電腦</strong><span>你選一方，由電腦控制另一方</span></label></div>
+    </div>
+    <div id="computerOptions" class="hidden">
+      <div class="section-label">你執哪一方？</div>
+      <div class="choice-grid">
+        <div class="choice"><input type="radio" id="sideRed" name="playerSide" value="red" checked><label for="sideRed"><strong>🔴 紅方</strong><span>先行</span></label></div>
+        <div class="choice"><input type="radio" id="sideBlack" name="playerSide" value="black"><label for="sideBlack"><strong>⚫ 黑方</strong><span>後行，由電腦先走</span></label></div>
+      </div>
+      <div class="section-label">電腦難度</div>
+      <div class="difficulty-grid">
+        <div class="choice"><input type="radio" id="diffEasy" name="difficulty" value="easy"><label for="diffEasy"><strong>🟢 簡單</strong><span>偏隨機，會犯錯</span></label></div>
+        <div class="choice"><input type="radio" id="diffNormal" name="difficulty" value="normal" checked><label for="diffNormal"><strong>🟡 普通</strong><span>看約 2 層變化</span></label></div>
+        <div class="choice"><input type="radio" id="diffHard" name="difficulty" value="hard"><label for="diffHard"><strong>🔴 困難</strong><span>Alpha-Beta 搜尋</span></label></div>
+      </div>
+    </div>
+    <div class="setup-actions"><button type="submit">開始遊戲</button></div>
+  </form>
+</div>
+
+<script>
+(() => {
+  const canvas=document.getElementById('board'),ctx=canvas.getContext('2d');
+  const turnValue=document.getElementById('turnValue'),message=document.getElementById('message'),topStatus=document.getElementById('topStatus'),topSub=document.getElementById('topSub'),historyList=document.getElementById('historyList'),undoBtn=document.getElementById('undoBtn'),newGameBtn=document.getElementById('newGameBtn'),setupModal=document.getElementById('setupModal'),setupForm=document.getElementById('setupForm'),computerOptions=document.getElementById('computerOptions'),thinkingOverlay=document.getElementById('thinkingOverlay'),modeText=document.getElementById('modeText'),sideText=document.getElementById('sideText'),difficultyText=document.getElementById('difficultyText'),winnerOverlay=document.getElementById('winnerOverlay'),winnerTitle=document.getElementById('winnerTitle'),winnerReason=document.getElementById('winnerReason'),rematchBtn=document.getElementById('rematchBtn'),winnerSetupBtn=document.getElementById('winnerSetupBtn'),winnerIcon=document.getElementById('winnerIcon');
+  const ROWS=10,COLS=9,RED='red',BLACK='black';
+  const coarsePointer=window.matchMedia&&window.matchMedia('(pointer:coarse)').matches;
+  const pieceText={red:{rook:'車',horse:'馬',elephant:'相',advisor:'仕',king:'帥',cannon:'炮',pawn:'兵'},black:{rook:'車',horse:'馬',elephant:'象',advisor:'士',king:'將',cannon:'炮',pawn:'卒'}};
+  const PIECE_VALUE={king:100000,rook:900,cannon:450,horse:420,elephant:200,advisor:200,pawn:100};
+  let board,turn,selected,legalMoves,moveHistory,positionHistory,gameOver,gameMode='pvp',playerSide=RED,aiSide=BLACK,difficulty='normal',aiThinking=false,aiAnimating=false,aiTimer=null,aiAnimation=null,aiAnimationFrame=null;
+
+  function piece(type,side,id){return{type,side,id}}
+  function initialBoard(){
+    const b=Array.from({length:ROWS},()=>Array(COLS).fill(null)),back=['rook','horse','elephant','advisor','king','advisor','elephant','horse','rook'];
+    back.forEach((t,c)=>b[0][c]=piece(t,BLACK,`b-${t}-${c}`)); b[2][1]=piece('cannon',BLACK,'b-cannon-1');b[2][7]=piece('cannon',BLACK,'b-cannon-2');[0,2,4,6,8].forEach((c,i)=>b[3][c]=piece('pawn',BLACK,`b-pawn-${i}`));
+    back.forEach((t,c)=>b[9][c]=piece(t,RED,`r-${t}-${c}`)); b[7][1]=piece('cannon',RED,'r-cannon-1');b[7][7]=piece('cannon',RED,'r-cannon-2');[0,2,4,6,8].forEach((c,i)=>b[6][c]=piece('pawn',RED,`r-pawn-${i}`)); return b;
+  }
+  const cloneBoard=b=>b.map(row=>row.map(p=>p?{...p}:null)); const inside=(r,c)=>r>=0&&r<ROWS&&c>=0&&c<COLS; const other=s=>s===RED?BLACK:RED;
+  function inPalace(side,r,c){if(c<3||c>5)return false;return side===RED?(r>=7&&r<=9):(r>=0&&r<=2)}
+  const crossedRiver=(side,r)=>side===RED?r<=4:r>=5;
+  function countBetween(b,r1,c1,r2,c2){let n=0;if(r1===r2){const[a,z]=c1<c2?[c1,c2]:[c2,c1];for(let c=a+1;c<z;c++)if(b[r1][c])n++}else if(c1===c2){const[a,z]=r1<r2?[r1,r2]:[r2,r1];for(let r=a+1;r<z;r++)if(b[r][c1])n++}else return Infinity;return n}
+
+  function pseudoLegal(b,from,to,p){
+    const{r:r1,c:c1}=from,{r:r2,c:c2}=to;if(!inside(r2,c2)||(r1===r2&&c1===c2))return false;const target=b[r2][c2];if(target&&target.side===p.side)return false;const dr=r2-r1,dc=c2-c1,adr=Math.abs(dr),adc=Math.abs(dc);
+    switch(p.type){
+      case'rook':return(r1===r2||c1===c2)&&countBetween(b,r1,c1,r2,c2)===0;
+      case'horse':{if(!((adr===2&&adc===1)||(adr===1&&adc===2)))return false;let lr=r1,lc=c1;if(adr===2)lr=r1+Math.sign(dr);else lc=c1+Math.sign(dc);return!b[lr][lc]}
+      case'elephant':{if(!(adr===2&&adc===2))return false;if(p.side===RED&&r2<5)return false;if(p.side===BLACK&&r2>4)return false;return!b[r1+dr/2][c1+dc/2]}
+      case'advisor':return adr===1&&adc===1&&inPalace(p.side,r2,c2);
+      case'king':if(adr+adc===1&&inPalace(p.side,r2,c2))return true;return c1===c2&&target&&target.type==='king'&&target.side!==p.side&&countBetween(b,r1,c1,r2,c2)===0;
+      case'cannon':{if(!(r1===r2||c1===c2))return false;const n=countBetween(b,r1,c1,r2,c2);return target?n===1:n===0}
+      case'pawn':{const f=p.side===RED?-1:1;if(!crossedRiver(p.side,r1))return dr===f&&dc===0;return(dr===f&&dc===0)||(dr===0&&adc===1)}
+    }return false;
+  }
+  function findKing(b,side){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const p=b[r][c];if(p&&p.side===side&&p.type==='king')return{r,c}}return null}
+  function isSquareAttacked(b,pos,bySide){for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const p=b[r][c];if(p&&p.side===bySide&&pseudoLegal(b,{r,c},pos,p))return true}return false}
+  function isInCheck(b,side){const k=findKing(b,side);return!k||isSquareAttacked(b,k,other(side))}
+  function kingsFacing(b){const r=findKing(b,RED),k=findKing(b,BLACK);return!!(r&&k&&r.c===k.c&&countBetween(b,r.r,r.c,k.r,k.c)===0)}
+  function simulateMove(b,from,to){const nb=cloneBoard(b);nb[to.r][to.c]=nb[from.r][from.c];nb[from.r][from.c]=null;return nb}
+  function isLegalMove(b,from,to,side){const p=b[from.r][from.c];if(!p||p.side!==side||!pseudoLegal(b,from,to,p))return false;const nb=simulateMove(b,from,to);if(!findKing(nb,side)||kingsFacing(nb)||isInCheck(nb,side))return false;return true}
+  function getLegalMoves(b,from,side){const a=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(isLegalMove(b,from,{r,c},side))a.push({r,c});return a}
+  function generateAllMoves(b,side){const moves=[];for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const p=b[r][c];if(!p||p.side!==side)continue;for(const to of getLegalMoves(b,{r,c},side))moves.push({from:{r,c},to,piece:p,captured:b[to.r][to.c]})}return moves}
+
+  const coordName=(r,c)=>`(${r+1}, ${c+1})`;
+  function positionKey(b,sideToMove){
+    const code={rook:'R',horse:'H',elephant:'E',advisor:'A',king:'K',cannon:'C',pawn:'P'};
+    let s=sideToMove==='red'?'r|':'b|';
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const p=b[r][c];
+        s+=p?(p.side==='red'?'r':'b')+code[p.type]:'..';
+      }
+    }
+    return s;
+  }
+  function positionCount(key){
+    let n=0;
+    for(const k of positionHistory) if(k===key) n++;
+    return n;
+  }
+  function repetitionPenalty(nextBoard,nextTurn){
+    const n=positionCount(positionKey(nextBoard,nextTurn));
+    if(n>=2) return 12000;
+    if(n===1) return 320;
+    return 0;
+  }
+  function hideWinner(){winnerOverlay.classList.remove('show')}
+  function showWinner(side,reason){const name=side===RED?'紅方':'黑方';winnerIcon.textContent='🏆';winnerTitle.textContent=`${name}勝出！`;winnerTitle.className=`winner-title ${side}`;winnerReason.textContent=reason||'對局結束';winnerOverlay.classList.add('show')}
+  function showDraw(reason){winnerIcon.textContent='🤝';winnerTitle.textContent='和棋';winnerTitle.className='winner-title draw';winnerReason.textContent=reason||'對局結束';winnerOverlay.classList.add('show')}
+  function recordMove(from,to,p,captured,side){moveHistory.push({board:cloneBoard(board),turn,moveText:`${side===RED?'紅':'黑'}：${pieceText[p.side][p.type]} ${coordName(from.r,from.c)} → ${coordName(to.r,to.c)}${captured?`，吃${pieceText[captured.side][captured.type]}`:''}`})}
+  function applyRealMove(from,to){
+    const movingSide=turn,p=board[from.r][from.c],captured=board[to.r][to.c];
+    recordMove(from,to,p,captured,movingSide);
+    board[to.r][to.c]=p;
+    board[from.r][from.c]=null;
+    selected=null;
+    legalMoves=[];
+    const enemy=other(movingSide);
+
+    if(!findKing(board,enemy)){
+      gameOver=true;aiThinking=false;updateThinkingUI();
+      const reason='成功吃掉對方將／帥。';
+      updateUI('對局結束',`${movingSide===RED?'紅方':'黑方'}勝出：${reason}`);
+      showWinner(movingSide,reason);renderHistory();draw();return;
+    }
+
+    turn=enemy;
+
+    // 每完成一步，就記錄「棋盤 + 輪到哪一方」的完整局面。
+    const key=positionKey(board,turn);
+    positionHistory.push(key);
+    const repeated=positionCount(key);
+
+    // 第三次出現完全相同的局面時直接結束，避免無限循環。
+    if(repeated>=3){
+      gameOver=true;aiThinking=false;updateThinkingUI();
+      const reason='同一局面（包括輪到行棋的一方）已出現三次。';
+      updateUI('重複局面 · 和棋',reason);
+      showDraw(reason);
+      renderHistory();draw();return;
+    }
+
+    const check=isInCheck(board,turn),moves=generateAllMoves(board,turn);
+    if(!moves.length){
+      gameOver=true;
+      const winnerSide=other(turn),winner=winnerSide===RED?'紅方':'黑方';
+      const reason=check?`${turn===RED?'紅帥':'黑將'}已被將死。`:`${turn===RED?'紅方':'黑方'}沒有任何合法走法。`;
+      updateUI('對局結束',`${winner}勝出：${reason}`);
+      showWinner(winnerSide,reason);
+    }else if(check){
+      updateUI('⚠ 將軍！',`${turn===RED?'紅方':'黑方'}正被將軍，下一步必須解將。`);
+    }else if(repeated===2){
+      updateUI('⚠ 局面重複','同一局面已出現兩次；若第三次再次出現，將判和棋。');
+    }else{
+      updateUI('輪到下一方',`${turn===RED?'紅方':'黑方'}行棋。`);
+    }
+
+    renderHistory();draw();
+    if(gameMode==='pvc'&&!gameOver&&turn===aiSide)scheduleAiMove();
+  }
+
+  // ===== AI Engine =====
+  function positionalBonus(p,r,c){let bonus=0;if(p.type==='pawn'){if(crossedRiver(p.side,r))bonus+=55;if(c>=3&&c<=5)bonus+=10}else if(p.type==='horse'){const d=Math.abs(c-4)+Math.abs(r-4.5);bonus+=Math.max(0,38-d*6)}else if(p.type==='rook'){if(c>=2&&c<=6)bonus+=6}else if(p.type==='cannon'){if(c>=2&&c<=6)bonus+=8}return bonus}
+  function evaluateBoard(b,perspective){if(!findKing(b,perspective))return-999999;if(!findKing(b,other(perspective)))return 999999;let score=0;for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){const p=b[r][c];if(!p)continue;const v=PIECE_VALUE[p.type]+positionalBonus(p,r,c);score+=p.side===perspective?v:-v}if(isInCheck(b,other(perspective)))score+=70;if(isInCheck(b,perspective))score-=90;return score}
+  function orderedMoves(b,side,limit=Infinity){const moves=generateAllMoves(b,side);moves.sort((a,z)=>{let sa=0,sz=0;if(a.captured)sa+=PIECE_VALUE[a.captured.type]*10-PIECE_VALUE[a.piece.type];if(z.captured)sz+=PIECE_VALUE[z.captured.type]*10-PIECE_VALUE[z.piece.type];const ac=Math.abs(a.to.c-4),zc=Math.abs(z.to.c-4);sa-=ac;sz-=zc;return sz-sa});return moves.slice(0,limit)}
+  function minimax(b,depth,alpha,beta,maxSide,sideToMove){
+    if(!findKing(b,maxSide))return-999999-depth;if(!findKing(b,other(maxSide)))return 999999+depth;if(depth===0)return evaluateBoard(b,maxSide);
+    const limit=depth>=2?24:18,moves=orderedMoves(b,sideToMove,limit);if(!moves.length)return sideToMove===maxSide?-900000-depth:900000+depth;
+    if(sideToMove===maxSide){let best=-Infinity;for(const mv of moves){const val=minimax(simulateMove(b,mv.from,mv.to),depth-1,alpha,beta,maxSide,other(sideToMove));if(val>best)best=val;if(best>alpha)alpha=best;if(beta<=alpha)break}return best}
+    let best=Infinity;for(const mv of moves){const val=minimax(simulateMove(b,mv.from,mv.to),depth-1,alpha,beta,maxSide,other(sideToMove));if(val<best)best=val;if(best<beta)beta=best;if(beta<=alpha)break}return best;
+  }
+  function chooseEasyMove(b,side){const moves=generateAllMoves(b,side);if(!moves.length)return null;const scored=moves.map(m=>{let s=Math.random()*180;if(m.captured)s+=PIECE_VALUE[m.captured.type]*.8;const nb=simulateMove(b,m.from,m.to);if(findKing(nb,other(side))&&isInCheck(nb,other(side)))s+=90;if(m.piece.type==='pawn'&&crossedRiver(side,m.to.r))s+=30;s-=repetitionPenalty(nb,other(side));return{m,s}}).sort((a,z)=>z.s-a.s);const pool=scored.slice(0,Math.min(6,scored.length)),weights=[38,24,16,10,7,5].slice(0,pool.length),total=weights.reduce((a,z)=>a+z,0);let x=Math.random()*total;for(let i=0;i<pool.length;i++){x-=weights[i];if(x<=0)return pool[i].m}return pool[0].m}
+  function chooseSearchMove(b,side,depth){const moves=orderedMoves(b,side);if(!moves.length)return null;let best=-Infinity,bestMoves=[];for(const mv of moves){const nb=simulateMove(b,mv.from,mv.to);let s=minimax(nb,depth-1,-Infinity,Infinity,side,other(side))+Math.random()*3-repetitionPenalty(nb,other(side));if(s>best+.001){best=s;bestMoves=[mv]}else if(Math.abs(s-best)<.001)bestMoves.push(mv)}return bestMoves[Math.floor(Math.random()*bestMoves.length)]}
+  function chooseAiMove(){if(difficulty==='easy')return chooseEasyMove(board,aiSide);if(difficulty==='normal')return chooseSearchMove(board,aiSide,2);return chooseSearchMove(board,aiSide,3)}
+  function cancelAiAnimation(){
+    if(aiAnimationFrame){cancelAnimationFrame(aiAnimationFrame);aiAnimationFrame=null}
+    aiAnimating=false;aiAnimation=null;
+  }
+  function animateAiMove(mv){
+    aiThinking=false;aiAnimating=true;updateThinkingUI();
+    updateUI('🤖 電腦行棋中',`${aiSide===RED?'紅方':'黑方'}已選好一步，正在移動棋子…`);
+    aiAnimation={from:{...mv.from},to:{...mv.to},piece:board[mv.from.r][mv.from.c],progress:0,holding:true};
+    draw();
+
+    // 先停一停，讓玩家看清楚電腦選了哪隻棋
+    aiTimer=setTimeout(()=>{
+      if(gameOver||gameMode!=='pvc'||turn!==aiSide){cancelAiAnimation();updateThinkingUI();draw();return}
+      if(aiAnimation)aiAnimation.holding=false;
+      const duration=720;
+      const started=performance.now();
+      const step=now=>{
+        if(!aiAnimating||!aiAnimation)return;
+        const raw=Math.min(1,(now-started)/duration);
+        // easeInOutCubic：開始和落子時慢一點，中段較流暢
+        const eased=raw<.5?4*raw*raw*raw:1-Math.pow(-2*raw+2,3)/2;
+        aiAnimation.progress=eased;
+        draw();
+        if(raw<1){aiAnimationFrame=requestAnimationFrame(step);return}
+        const from={...mv.from},to={...mv.to};
+        cancelAiAnimation();updateThinkingUI();
+        applyRealMove(from,to);
+      };
+      aiAnimationFrame=requestAnimationFrame(step);
+    },360);
+  }
+  function scheduleAiMove(){
+    if(aiTimer)clearTimeout(aiTimer);
+    cancelAiAnimation();
+    aiThinking=true;updateThinkingUI();
+    updateUI('🤖 電腦思考中',`${aiSide===RED?'紅方':'黑方'}正在計算下一步…`);
+    aiTimer=setTimeout(()=>{
+      if(gameOver||gameMode!=='pvc'||turn!==aiSide){aiThinking=false;updateThinkingUI();return}
+      const mv=chooseAiMove();
+      if(!mv){
+        aiThinking=false;updateThinkingUI();gameOver=true;
+        const winnerSide=playerSide;
+        updateUI('對局結束',`${winnerSide===RED?'紅方':'黑方'}勝出：電腦沒有合法走法。`);
+        showWinner(winnerSide,'電腦沒有合法走法。');return
+      }
+      animateAiMove(mv);
+    },950)
+  }
+
+  // ===== UI =====
+  function canUndoNow(){if(aiThinking||aiAnimating)return false;if(gameMode==='pvp')return moveHistory.length>=1;return playerSide===RED?moveHistory.length>=2:moveHistory.length>=3}
+  function updateModeSummary(){modeText.textContent=gameMode==='pvp'?'玩家 VS 玩家':'玩家 VS 電腦';sideText.textContent=gameMode==='pvp'?'雙方玩家':(playerSide===RED?'紅方':'黑方');difficultyText.textContent=gameMode==='pvp'?'—':({easy:'簡單',normal:'普通',hard:'困難'}[difficulty])}
+  function updateThinkingUI(){thinkingOverlay.classList.toggle('show',aiThinking);canvas.style.cursor=(aiThinking||aiAnimating)?'wait':'pointer';undoBtn.disabled=!canUndoNow()}
+  function updateUI(title,text){const name=turn===RED?'紅方':'黑方';turnValue.textContent=name;turnValue.className=`turn-value ${turn}`;if(gameOver)topStatus.textContent=title;else if(aiThinking)topStatus.textContent='電腦思考中';else if(aiAnimating)topStatus.textContent='電腦行棋中';else if(gameMode==='pvc')topStatus.textContent=turn===playerSide?`${name} · 你的回合`:`${name} · 電腦回合`;else topStatus.textContent=`${name}${isInCheck(board,turn)?' · 被將軍':'回合'}`;topSub.textContent=text;message.innerHTML=`<strong>${title}</strong>${text}`;undoBtn.disabled=!canUndoNow()}
+  function renderHistory(){if(!moveHistory.length){historyList.innerHTML='<div class="empty">尚未行棋</div>'}else{historyList.innerHTML=moveHistory.map((m,i)=>`<div class="history-row">${i+1}. ${m.moveText}</div>`).join('');historyList.scrollTop=historyList.scrollHeight}undoBtn.disabled=!canUndoNow()}
+  function selectAt(r,c){if(gameOver||aiThinking||aiAnimating)return;if(gameMode==='pvc'&&turn!==playerSide){updateUI('請稍候','現在是電腦回合。');return}const p=board[r][c];if(selected){if(selected.r===r&&selected.c===c){selected=null;legalMoves=[];updateUI('取消選擇',`${turn===RED?'紅方':'黑方'}請重新選棋。`);draw();return}if(legalMoves.some(m=>m.r===r&&m.c===c)){applyRealMove(selected,{r,c});return}if(p&&p.side===turn){selected={r,c};legalMoves=getLegalMoves(board,selected,turn);updateUI('已選棋子',`${pieceText[p.side][p.type]}共有 ${legalMoves.length} 個合法位置。`);draw();return}updateUI('不能這樣走','這個位置不是目前棋子的合法落點。');draw();return}if(!p){updateUI('請先選棋',`${turn===RED?'紅方':'黑方'}請點擊自己的棋子。`);return}if(p.side!==turn){updateUI('不是你的棋子',`現在輪到${turn===RED?'紅方':'黑方'}。`);return}selected={r,c};legalMoves=getLegalMoves(board,selected,turn);updateUI('已選棋子',`${pieceText[p.side][p.type]}共有 ${legalMoves.length} 個合法位置。`);draw()}
+  function undo(){if(!canUndoNow())return;hideWinner();if(aiTimer){clearTimeout(aiTimer);aiTimer=null}cancelAiAnimation();let restored=null,steps=gameMode==='pvp'?1:2;for(let i=0;i<steps&&moveHistory.length;i++){restored=moveHistory.pop();if(positionHistory.length>1)positionHistory.pop()}if(!restored)return;board=cloneBoard(restored.board);turn=restored.turn;selected=null;legalMoves=[];gameOver=false;aiThinking=false;updateThinkingUI();updateUI('已悔棋',`回到${turn===RED?'紅方':'黑方'}行棋。`);renderHistory();draw()}
+  function startGame(){hideWinner();if(aiTimer){clearTimeout(aiTimer);aiTimer=null}cancelAiAnimation();const fd=new FormData(setupForm);gameMode=fd.get('mode')||'pvp';if(gameMode==='pvc'){playerSide=fd.get('playerSide')||RED;aiSide=other(playerSide);difficulty=fd.get('difficulty')||'normal'}else{playerSide=RED;aiSide=BLACK;difficulty='normal'}board=initialBoard();turn=RED;selected=null;legalMoves=[];moveHistory=[];positionHistory=[positionKey(board,turn)];gameOver=false;aiThinking=false;setupModal.classList.add('hidden');updateModeSummary();renderHistory();updateThinkingUI();if(gameMode==='pvc'&&playerSide===BLACK){updateUI('開始對局','你執黑方，電腦執紅方先行。');draw();scheduleAiMove();return}updateUI('開始對局',gameMode==='pvc'?'你執紅方，請先行。':'紅方先行。');draw()}
+  function openSetup(){hideWinner();if(aiTimer){clearTimeout(aiTimer);aiTimer=null}cancelAiAnimation();aiThinking=false;updateThinkingUI();setupModal.classList.remove('hidden')}
+  document.querySelectorAll('input[name="mode"]').forEach(el=>el.addEventListener('change',()=>computerOptions.classList.toggle('hidden',document.querySelector('input[name="mode"]:checked').value!=='pvc')));setupForm.addEventListener('submit',e=>{e.preventDefault();startGame()});newGameBtn.addEventListener('click',openSetup);undoBtn.addEventListener('click',undo);rematchBtn.addEventListener('click',()=>{hideWinner();startGame()});winnerSetupBtn.addEventListener('click',openSetup);
+
+  // ===== Drawing =====
+  function getMetrics(){const cssW=canvas.clientWidth,cssH=canvas.clientHeight,dpr=Math.min(window.devicePixelRatio||1,2),targetW=Math.round(cssW*dpr),targetH=Math.round(cssH*dpr);if(canvas.width!==targetW||canvas.height!==targetH){canvas.width=targetW;canvas.height=targetH}ctx.setTransform(dpr,0,0,dpr,0,0);const padX=cssW*.08,padY=cssH*.07;return{cssW,cssH,padX,padY,stepX:(cssW-padX*2)/(COLS-1),stepY:(cssH-padY*2)/(ROWS-1)}}
+  function drawBoard(m){const{cssW,cssH,padX,padY,stepX,stepY}=m;ctx.clearRect(0,0,cssW,cssH);const g=ctx.createLinearGradient(0,0,cssW,cssH);g.addColorStop(0,'#efca8b');g.addColorStop(1,'#d5a058');ctx.fillStyle=g;ctx.fillRect(0,0,cssW,cssH);ctx.globalAlpha=.07;for(let i=0;i<68;i++){ctx.fillStyle=i%2?'#fff':'#6b431f';ctx.fillRect(0,(i/68)*cssH,cssW,1)}ctx.globalAlpha=1;ctx.strokeStyle='#684421';ctx.lineWidth=Math.max(1.4,cssW/420);ctx.lineCap='round';for(let r=0;r<ROWS;r++){const y=padY+r*stepY;ctx.beginPath();ctx.moveTo(padX,y);ctx.lineTo(padX+8*stepX,y);ctx.stroke()}for(let c=0;c<COLS;c++){const x=padX+c*stepX;ctx.beginPath();if(c===0||c===8){ctx.moveTo(x,padY);ctx.lineTo(x,padY+9*stepY)}else{ctx.moveTo(x,padY);ctx.lineTo(x,padY+4*stepY);ctx.moveTo(x,padY+5*stepY);ctx.lineTo(x,padY+9*stepY)}ctx.stroke()}[[3,0,5,2],[5,0,3,2],[3,7,5,9],[5,7,3,9]].forEach(([c1,r1,c2,r2])=>{ctx.beginPath();ctx.moveTo(padX+c1*stepX,padY+r1*stepY);ctx.lineTo(padX+c2*stepX,padY+r2*stepY);ctx.stroke()});ctx.fillStyle='rgba(89,54,25,.82)';ctx.font=`700 ${Math.max(18,cssW*.045)}px "KaiTi","Kaiti TC","STKaiti","Microsoft JhengHei",serif`;ctx.textAlign='center';ctx.textBaseline='middle';const riverY=padY+4.5*stepY;ctx.fillText('楚 河',padX+2*stepX,riverY);ctx.fillText('漢 界',padX+6*stepX,riverY)}
+  function drawHighlights(m){const{padX,padY,stepX,stepY,cssW}=m;if(selected){const x=padX+selected.c*stepX,y=padY+selected.r*stepY;ctx.beginPath();ctx.arc(x,y,Math.max(coarsePointer?23:18,cssW*(coarsePointer?.043:.04)),0,Math.PI*2);ctx.strokeStyle='rgba(30,118,77,.95)';ctx.lineWidth=Math.max(3,cssW*.006);ctx.stroke()}legalMoves.forEach(pos=>{const x=padX+pos.c*stepX,y=padY+pos.r*stepY;if(board[pos.r][pos.c]){ctx.beginPath();ctx.arc(x,y,Math.max(coarsePointer?26:21,cssW*(coarsePointer?.047:.044)),0,Math.PI*2);ctx.strokeStyle='rgba(178,59,59,.9)';ctx.lineWidth=Math.max(4,cssW*.007);ctx.stroke()}else{ctx.beginPath();ctx.arc(x,y,Math.max(coarsePointer?9:5,cssW*(coarsePointer?.015:.012)),0,Math.PI*2);ctx.fillStyle='rgba(29,127,84,.9)';ctx.fill()}})}
+  function drawOnePiece(p,x,y,radius,cssW){
+    ctx.save();ctx.shadowColor='rgba(50,29,12,.25)';ctx.shadowBlur=8;ctx.shadowOffsetY=3;
+    const gr=ctx.createRadialGradient(x-radius*.3,y-radius*.35,radius*.1,x,y,radius);gr.addColorStop(0,'#fff8e8');gr.addColorStop(1,'#e7cea0');ctx.fillStyle=gr;
+    ctx.beginPath();ctx.arc(x,y,radius,0,Math.PI*2);ctx.fill();ctx.shadowColor='transparent';ctx.lineWidth=Math.max(2,cssW*.004);ctx.strokeStyle=p.side===RED?'#a92b25':'#242424';ctx.stroke();
+    ctx.beginPath();ctx.arc(x,y,radius*.82,0,Math.PI*2);ctx.lineWidth=Math.max(1,cssW*.0022);ctx.stroke();
+    ctx.fillStyle=p.side===RED?'#a92b25':'#242424';ctx.font=`900 ${radius*1.18}px "KaiTi","Kaiti TC","STKaiti","Microsoft JhengHei",serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(pieceText[p.side][p.type],x,y+radius*.03);ctx.restore();
+  }
+  function drawPieces(m){
+    const{padX,padY,stepX,stepY,cssW}=m,radius=Math.min(stepX,stepY)*(coarsePointer?.39:.36);
+    for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+      const p=board[r][c];if(!p)continue;
+      if(aiAnimating&&aiAnimation&&r===aiAnimation.from.r&&c===aiAnimation.from.c)continue;
+      drawOnePiece(p,padX+c*stepX,padY+r*stepY,radius,cssW);
+    }
+
+    if(aiAnimating&&aiAnimation){
+      const a=aiAnimation;
+      const sx=padX+a.from.c*stepX,sy=padY+a.from.r*stepY;
+      const tx=padX+a.to.c*stepX,ty=padY+a.to.r*stepY;
+
+      // 起點與終點提示，玩家可一眼看到電腦這一步
+      ctx.save();
+      ctx.lineWidth=Math.max(3,cssW*.005);
+      ctx.strokeStyle='rgba(91,71,51,.75)';
+      ctx.setLineDash([7,7]);
+      ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(tx,ty);ctx.stroke();ctx.setLineDash([]);
+      ctx.beginPath();ctx.arc(sx,sy,radius*1.18,0,Math.PI*2);ctx.strokeStyle='rgba(36,124,85,.9)';ctx.stroke();
+      ctx.beginPath();ctx.arc(tx,ty,radius*1.18,0,Math.PI*2);ctx.strokeStyle='rgba(178,59,59,.88)';ctx.stroke();
+      ctx.restore();
+
+      const t=a.holding?0:a.progress;
+      const x=sx+(tx-sx)*t,y=sy+(ty-sy)*t;
+      drawOnePiece(a.piece,x,y,radius,cssW);
+    }
+
+    if(!gameOver&&isInCheck(board,turn)){
+      const k=findKing(board,turn);if(k){const x=padX+k.c*stepX,y=padY+k.r*stepY;ctx.beginPath();ctx.arc(x,y,radius*1.22,0,Math.PI*2);ctx.strokeStyle='rgba(188,33,33,.9)';ctx.lineWidth=Math.max(4,cssW*.007);ctx.stroke()}
+    }
+  }
+  function draw(){if(!board)return;const m=getMetrics();drawBoard(m);drawHighlights(m);drawPieces(m)}
+  function handlePointer(ev){
+    if(aiThinking||aiAnimating)return;
+    if(ev.cancelable)ev.preventDefault();
+    const rect=canvas.getBoundingClientRect(),x=ev.clientX-rect.left,y=ev.clientY-rect.top,m=getMetrics();
+    // Treat each intersection as the centre of a full touch cell. This is far easier on iPad than
+    // requiring a finger to land inside the visible circular chess piece.
+    const left=m.padX-m.stepX*.5,right=m.padX+8*m.stepX+m.stepX*.5;
+    const top=m.padY-m.stepY*.5,bottom=m.padY+9*m.stepY+m.stepY*.5;
+    if(x<left||x>right||y<top||y>bottom)return;
+    const c=Math.max(0,Math.min(8,Math.round((x-m.padX)/m.stepX)));
+    const r=Math.max(0,Math.min(9,Math.round((y-m.padY)/m.stepY)));
+    if(!inside(r,c))return;
+    // Mouse keeps precision. Touch / Pencil can use the entire nearest cell.
+    const isTouch=coarsePointer||ev.pointerType==='touch'||ev.pointerType==='pen';
+    if(!isTouch){const px=m.padX+c*m.stepX,py=m.padY+r*m.stepY;if(Math.hypot(x-px,y-py)>Math.min(m.stepX,m.stepY)*.48)return}
+    selectAt(r,c);
+  }
+  if(window.PointerEvent)canvas.addEventListener('pointerup',handlePointer);else canvas.addEventListener('click',handlePointer);
+  window.addEventListener('resize',draw);
+  window.addEventListener('orientationchange',()=>setTimeout(draw,120));
+
+  board=initialBoard();turn=RED;selected=null;legalMoves=[];moveHistory=[];positionHistory=[positionKey(board,turn)];gameOver=false;aiAnimating=false;aiAnimation=null;updateModeSummary();renderHistory();draw();
+})();
+</script>
+</body>
+</html>
